@@ -41,7 +41,7 @@ return {
 				bufferline = {
 					underline_selected = false,
 					underline_visible = false,
-					bold = false,
+					bold = true,
 				},
 				indent_blankline = {
 					context_highlight = "pro", -- default | pro
@@ -53,6 +53,7 @@ return {
 					-- ColorColumn = { bg = c.base.dimmed3 },
 					-- ColorColumn = { bg =  "#272727" },
 					-- Mine
+					CmpCompletion = { blend = vim.o.pumblend },
 					Normal = { bg = "#1c1c1c" },
 					DashboardRecent = { fg = c.base.magenta },
 					DashboardProject = { fg = c.base.blue },

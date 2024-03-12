@@ -7,8 +7,10 @@
 -- Please use this mappings table to set keyboard mapping since this is the
 -- lower level configuration and more robust one. (which-key will
 -- automatically pick-up stored data by this setting.)
-
-
+local Util = require("lazyvim.util")
+vim.keymap.set("n", "<F7>", function()
+  Util.terminal(nil, { border = "rounded" })
+end, { desc = "Term with border" })
 vim.keymap.set("n", "<leader>or", ":OverseerRun<cr>", { desc = "Overseer Run Task" })
 vim.keymap.set("n", "<leader><F7>", ":ToggleTerm size= 10 direction=horizontal<cr>", { desc = "Term horizontal" })
 vim.keymap.set("n", "<leader>fi", function()
@@ -36,7 +38,7 @@ vim.keymap.set("n", "mi", ":lua require('bookmarks').bookmark_ann()<cr>", { desc
 vim.keymap.set("n", "mn", ":lua require('bookmarks').bookmark_next()<cr>", { desc = "jump to next mark in local buffer" })
 vim.keymap.set("n", "mp", ":lua require('bookmarks').bookmark_prev()<cr>", { desc = "jump to previous mark in local buffer" })
 vim.keymap.set("n", "ml", ":lua require('bookmarks').bookmark_list()<cr>", { desc = "show marked file list in quickfix window" })
-vim.keymap.set("n", "<F8>", ":Tagbar<cr>", { desc = "Open/Close tagbar" ,noremap = true})
+-- vim.keymap.set("n", "<F8>", ":Tagbar<cr>", { desc = "Open/Close tagbar" ,noremap = true})
 vim.keymap.set("n", "<F2>", function ()
 	local base_search_dir = vim.g.base_search_dir
 	if base_search_dir==nil or base_search_dir == '' then

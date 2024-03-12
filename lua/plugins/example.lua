@@ -13,12 +13,12 @@ return {
   { "ellisonleao/gruvbox.nvim" },
 
   -- Configure LazyVim to load gruvbox
-  {
-    "LazyVim/LazyVim",
-    opts = {
-      colorscheme = "gruvbox",
-    },
-  },
+  -- {
+  --  "LazyVim/LazyVim",
+  --  opts = {
+  --    colorscheme = "gruvbox",
+  --  },
+  --},
 
   -- change trouble config
   {
@@ -87,7 +87,7 @@ return {
   {
     "neovim/nvim-lspconfig",
     ---@class PluginLspOpts
-    opts = {
+    opts = { 
       ---@type lspconfig.options
       servers = {
         -- pyright will be automatically installed with mason and loaded with lspconfig
@@ -135,12 +135,14 @@ return {
   -- treesitter, mason and typescript.nvim. So instead of the above, you can use:
   { import = "lazyvim.plugins.extras.lang.typescript" },
 
+
   -- add more treesitter parsers
   {
     "nvim-treesitter/nvim-treesitter",
     opts = {
       ensure_installed = {
         "bash",
+		"cpp",
         "html",
         "javascript",
         "json",
@@ -180,20 +182,22 @@ return {
       table.insert(opts.sections.lualine_x, "😄")
     end,
   },
+	
+
 
   -- or you can return new options to override all the defaults
-  {
-    "nvim-lualine/lualine.nvim",
-    event = "VeryLazy",
-    opts = function()
-      return {
-        --[[add your custom lualine config here]]
-      }
-    end,
-  },
+  --{
+  --  "nvim-lualine/lualine.nvim",
+  --  event = "VeryLazy",
+  --  opts = function()
+  --   return {
+  --      --[[add your custom lualine config here]]
+  --    }
+  --  end,
+  --},
 
   -- use mini.starter instead of alpha
-  { import = "lazyvim.plugins.extras.ui.mini-starter" },
+  -- { import = "lazyvim.plugins.extras.ui.mini-starter" },
 
   -- add jsonls and schemastore packages, and setup treesitter for json, json5 and jsonc
   { import = "lazyvim.plugins.extras.lang.json" },
@@ -227,9 +231,8 @@ return {
     },
     ---@param opts cmp.ConfigSchema
     opts = function(_, opts)
-	print("init")
+
       local has_words_before = function()
-	print("have")
         unpack = unpack or table.unpack
         local line, col = unpack(vim.api.nvim_win_get_cursor(0))
         return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match("%s") == nil
@@ -240,7 +243,6 @@ return {
 
       opts.mapping = vim.tbl_extend("force", opts.mapping, {
         ["<Tab>"] = cmp.mapping(function(fallback)
-	print(cmp.visible())
           if cmp.visible() then
             cmp.select_next_item()
             -- You could replace the expand_or_jumpable() calls with expand_or_locally_jumpable()
