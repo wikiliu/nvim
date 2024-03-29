@@ -95,6 +95,14 @@ return {
       },
     },
   },
+	
+{
+  "stevearc/conform.nvim",
+opts = function(_,opts)
+opts.formatters_by_ft.c = {"clang-format"}
+opts.formatters_by_ft.cpp = {"clang-format"}
+end,
+},
 
   -- add tsserver and setup with typescript.nvim instead of lspconfig
   {
@@ -142,7 +150,7 @@ return {
     opts = {
       ensure_installed = {
         "bash",
-		"cpp",
+	"cpp",
         "html",
         "javascript",
         "json",
@@ -263,6 +271,12 @@ return {
           else
             fallback()
           end
+        end, { "i", "s" }),
+        ["<Up>"] = cmp.mapping(function(fallback)
+            fallback()
+        end, { "i", "s" }),
+        ["<Down>"] = cmp.mapping(function(fallback)
+            fallback()
         end, { "i", "s" }),
       })
     end,

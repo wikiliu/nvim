@@ -8,9 +8,7 @@
 -- lower level configuration and more robust one. (which-key will
 -- automatically pick-up stored data by this setting.)
 local Util = require("lazyvim.util")
-vim.keymap.set("n", "<F7>", function()
-  Util.terminal(nil, { border = "rounded" })
-end, { desc = "Term with border" })
+vim.keymap.set("n", "<F7>", '<Cmd>execute v:count . "ToggleTerm"<CR>', { desc = "Term with border" })
 vim.keymap.set("n", "<leader>or", "<cmd>OverseerRun<cr>", { desc = "Overseer Run Task" })
 vim.keymap.set("n", "<leader><F7>", "<cmd>ToggleTerm size= 10 direction=horizontal<cr>", { desc = "Term horizontal" })
 vim.keymap.set("n", "<leader>fi", function()
@@ -68,7 +66,7 @@ vim.keymap.set("n", "<leader>f<F2>", function ()
 	require("select-dir").dir_history()
 end, { desc = "History of search directory" })
 
-vim.keymap.set("v","<leader>f",      		function()
+vim.keymap.set("v","<C-f>",      		function()
 	local base_search_dir = vim.g.base_search_dir
 
 	if base_search_dir==nil or base_search_dir == '' then

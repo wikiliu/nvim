@@ -1,6 +1,8 @@
 
 	return {
 		'stevearc/overseer.nvim',
+ 		dependencies = {
+    "akinsho/toggleterm.nvim",},
 		cmd="OverseerRun",
 		lazy = true,
 		config = function()
