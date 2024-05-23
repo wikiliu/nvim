@@ -10,6 +10,8 @@ return{
 	 },
 	
 	 opts = function(_,opts)
+		require("telescope").load_extension("live_grep_args")
+		require('telescope').load_extension('bookmarks')
 	 	opts.defaults.mappings.i["<A-g>"] = require("telescope-live-grep-args.actions").quote_prompt()
 	 	opts.defaults.mappings.i["<A-i>"] = require("telescope-live-grep-args.actions").quote_prompt({ postfix = " --iglob " })
 	 return opts
