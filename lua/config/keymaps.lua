@@ -8,7 +8,10 @@
 -- lower level configuration and more robust one. (which-key will
 -- automatically pick-up stored data by this setting.)
 local Util = require("lazyvim.util")
+vim.keymap.set("n", "<leader>cs", "<cmd>SymbolsOutline<cr>", { desc = "Symbols Outline" })
 vim.keymap.set("n", "<F7>", '<Cmd>execute v:count . "ToggleTerm"<CR>', { desc = "Term with border" })
+vim.keymap.set("t", "<F7>", "<Cmd>ToggleTerm<CR>", { desc = "Term with border" })
+vim.keymap.set("i", "<F7>", "<Esc><Cmd>ToggleTerm<CR>", { desc = "Term with border" })
 vim.keymap.set("n", "<leader>or", "<cmd>OverseerRun<cr>", { desc = "Overseer Run Task" })
 vim.keymap.set("n", "<leader>df", "<cmd>DiffFormatFile<cr>", { desc = "Diff format File" })
 vim.keymap.set("n", "<leader><F7>", "<cmd>ToggleTerm size= 10 direction=horizontal<cr>", { desc = "Term horizontal" })
@@ -133,3 +136,14 @@ vim.keymap.set("i", "jj", "<Esc>", { noremap = true })
 vim.keymap.set("n", "<leader>f<CR>", function()
   require("telescope.builtin").resume()
 end, { desc = "Resume previous search" })
+
+vim.keymap.set({ "n", "i", "t" }, "<C-f>", function()
+  local base_search_dir = vim.g.base_search_dir
+  if base_search_dir == nil or base_search_dir == "" then
+    base_search_dir = require("select-dir").load_dir()
+  end
+  require("telescope").extensions.live_grep_args.live_grep_args({
+    search_dirs = { base_search_dir },
+    postfix = "--fixed-strings",
+  })
+end, { desc = "Find word in path folder" })

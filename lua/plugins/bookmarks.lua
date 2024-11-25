@@ -1,13 +1,14 @@
 return {
-  "tomasky/bookmarks.nvim",
+  "ten3roberts/bookmarks.nvim",
+  branch = "feat-scoped-bookmarks",
   -- after = "telescope.nvim",
   event = "VimEnter",
-  lazy = false,
   config = function()
     require("bookmarks").setup({
-      scoped = false,
-      -- sign_priority = 8,  --set bookmark sign priority to cover other sign
-      save_file = vim.fn.expand("$HOME/.bookmarks"), -- bookmarks save file path
+      sign_priority = 8, --set bookmark sign priority to cover other sign
+      -- save_file = vim.fn.expand("$HOME/.bookmarks"), -- bookmarks save file path
+      save_file = ".bookmarks", -- bookmarks save file path
+      scoped = true,
       keywords = {
         ["@t"] = "☑️ ", -- mark annotation startswith @t ,signs this icon as `Todo`
         ["@w"] = "⚠️ ", -- mark annotation startswith @w ,signs this icon as `Warn`
@@ -28,4 +29,3 @@ return {
     require("telescope").load_extension("bookmarks")
   end,
 }
-

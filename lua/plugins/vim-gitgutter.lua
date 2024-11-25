@@ -1,4 +1,4 @@
-return{
-"airblade/vim-gitgutter",
-lazy=false
+return {
+  -- "airblade/vim-gitgutter",
+  -- lazy=false
 }
