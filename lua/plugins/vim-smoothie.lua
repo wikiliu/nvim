@@ -1,4 +1,4 @@
 return {
-    "psliwka/vim-smoothie",
-    event = "VeryLazy",
+  "psliwka/vim-smoothie",
+  event = "VeryLazy",
 }

@@ -1,11 +1,11 @@
 return {
   "nvim-telescope/telescope.nvim",
   dependencies = {
-    { "nvim-telescope/telescope-fzf-native.nvim", enabled = vim.fn.executable "make" == 1, build = "make" },
+    { "nvim-telescope/telescope-fzf-native.nvim", enabled = vim.fn.executable("make") == 1, build = "make" },
   },
   cmd = "Telescope",
-  opts = function(_,opts)
-    local actions = require "telescope.actions"
+  opts = function(_, opts)
+    local actions = require("telescope.actions")
     return {
       defaults = {
         git_worktrees = vim.g.git_worktrees,
