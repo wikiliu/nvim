@@ -11,7 +11,6 @@
 return {
   -- add gruvbox
   { "ellisonleao/gruvbox.nvim" },
-	
   {
     "lewis6991/gitsigns.nvim",
     enabled = true,
@@ -77,18 +76,6 @@ return {
     },
   },
 
-  -- add telescope-fzf-native
-  {
-    "telescope.nvim",
-    dependencies = {
-      "nvim-telescope/telescope-fzf-native.nvim",
-      build = "make",
-      config = function()
-        require("telescope").load_extension("fzf")
-      end,
-    },
-  },
-
   -- add pyright to lspconfig
   {
     "neovim/nvim-lspconfig",
@@ -101,7 +88,7 @@ return {
       },
     },
   },
-	
+
 {
   "stevearc/conform.nvim",
 opts = function(_,opts)
@@ -156,7 +143,7 @@ end,
     opts = {
       ensure_installed = {
         "bash",
-	"cpp",
+        "cpp",
         "html",
         "javascript",
         "json",
@@ -200,8 +187,6 @@ end,
       })
     end,
   },
-	
-
 
   -- or you can return new options to override all the defaults
   --{
@@ -283,5 +268,5 @@ end,
         end, { "i", "s" }),
       })
     end,
-  },
+  }
 }
