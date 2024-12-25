@@ -24,7 +24,7 @@ return {
         -- automatically after the task exits
         -- can be "never, "success", or "always". "success" will close the window
         -- only if the exit code is 0.
-        -- quit_on_exit = "success",
+        quit_on_exit = "success",
         -- open the toggleterm window when a task starts
         open_on_start = true,
         -- mirrors the toggleterm "hidden" parameter, and keeps the task from

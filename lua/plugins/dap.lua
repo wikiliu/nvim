@@ -56,7 +56,22 @@ return {
         end,
         cwd = "${workspaceFolder}",
       },
+      {
+        name = "gdbserver custom port ",
+        type = "gdb",
+        request = "attach",
+        target = function()
+          return vim.fn.input("ip:port : ")
+        end,
+        cwd = "${workspacefolder}",
+      },
     }
     dap.configurations.cpp = dap.configurations.c
+    -- setup dap config by VsCode launch.json file
+    local vscode = require("dap.ext.vscode")
+    local json = require("plenary.json")
+    vscode.json_decode = function(str)
+      return vim.json.decode(json.json_strip_comments(str))
+    end
   end,
 }

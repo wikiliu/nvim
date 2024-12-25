@@ -82,3 +82,9 @@ vim.api.nvim_create_user_command("DiffFormatFile", function()
     })
   end
 end, { desc = "Format changed lines" })
+
+-- 安全加载本地配置
+local local_config = vim.fn.getcwd() .. "/.vscode/.nvim.lua"
+if vim.fn.filereadable(local_config) == 1 then
+  dofile(local_config)
+end

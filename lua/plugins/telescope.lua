@@ -8,6 +8,9 @@ return {
     },
   },
   opts = function(_, opts)
+    opts.defaults = opts.defaults or {}
+    opts.defaults.mappings = opts.defaults.mappings or {}
+    opts.defaults.mappings.i = opts.defaults.mappings.i or {}
     require("telescope").load_extension("live_grep_args")
     require("telescope").load_extension("bookmarks")
     opts.defaults.mappings.i["<A-g>"] = require("telescope-live-grep-args.actions").quote_prompt()
