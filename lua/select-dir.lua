@@ -1,10 +1,3 @@
-local action_set = require("telescope.actions.set")
-local action_state = require("telescope.actions.state")
-local actions = require("telescope.actions")
-local conf = require("telescope.config").values
-local finders = require("telescope.finders")
-local make_entry = require("telescope.make_entry")
-local pickers = require("telescope.pickers")
 local uv = vim.loop
 local flatten = vim.tbl_flatten
 local M = {}
@@ -213,6 +206,7 @@ M.telescope_get_dirs = function()
 
   local getPreviewer = function()
     if opts_in.show_preview then
+      local conf = require("telescope.config").values
       return conf.file_previewer(opts_in)
     else
       return nil
@@ -222,13 +216,18 @@ M.telescope_get_dirs = function()
     stdout_buffered = true,
     on_stdout = function(_, data)
       if data then
-        pickers
+        require("telescope.pickers")
           .new(opts_in, {
             prompt_title = "Select a Directory",
-            finder = finders.new_table({ results = data, entry_maker = make_entry.gen_from_file(opts_in) }),
+            finder = require("telescope.finders").new_table({
+              results = data,
+              entry_maker = require("telescope.make_entry").gen_from_file(opts_in),
+            }),
             previewer = getPreviewer(),
             sorter = conf.file_sorter(opts_in),
             attach_mappings = function(prompt_bufnr)
+              local action_set = require("telescope.actions.set")
+              local actions = require("telescope.actions")
               action_set.select:replace(function()
                 local current_picker = action_state.get_current_picker(prompt_bufnr)
                 local dirs = {}
@@ -300,10 +299,12 @@ end
 M.dir_history = function(opts)
   opts = opts or {}
   local dirlist = get_text()
-  local picker = pickers
+  local actions = require("telescope.actions")
+  local conf = require("telescope.config").values
+  local picker = require("telescope.pickers")
     .new(opts, {
       prompt_title = "folder_history",
-      finder = finders.new_table(dirlist),
+      finder = require("telescope.finders").new_table(dirlist),
       sorter = conf.generic_sorter(opts),
       attach_mappings = function(prompt_bufnr, map)
         actions.select_default:replace(function()
