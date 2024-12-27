@@ -15,28 +15,18 @@ vim.keymap.set("i", "<F7>", "<Esc><Cmd>ToggleTerm<CR>", { desc = "Term with bord
 vim.keymap.set("n", "<leader>or", "<cmd>OverseerRun<cr>", { desc = "Overseer Run Task" })
 vim.keymap.set("n", "<leader>df", "<cmd>DiffFormatFile<cr>", { desc = "Diff format File" })
 vim.keymap.set("n", "<leader><F7>", "<cmd>ToggleTerm size= 10 direction=horizontal<cr>", { desc = "Term horizontal" })
-vim.keymap.set("n", "<leader>fi", function()
-  local base_search_dir = vim.g.base_search_dir
-  if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
-  end
-  local word_under_cursor = vim.fn.expand("<cword>")
-  require("telescope").extensions.live_grep_args.live_grep_args({
-    default_text = word_under_cursor,
-    search_dirs = { base_search_dir },
-    postfix = "--fixed-strings",
-  })
-end, { desc = "Find cursor word in path folder" })
-vim.keymap.set("n", "<leader>fI", function()
-  local base_search_dir = vim.g.base_search_dir
-  if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
-  end
-  require("telescope").extensions.live_grep_args.live_grep_args({
-    search_dirs = { base_search_dir },
-    postfix = "--fixed-strings",
-  })
-end, { desc = "Find word in path folder" })
+vim.keymap.set(
+  "n",
+  "<leader>fi",
+  "<cmd> lua require('select-dir').my_find_i()<cr>",
+  { desc = "Find cursor word in path folder" }
+)
+vim.keymap.set(
+  "n",
+  "<leader>fI",
+  "<cmd> lua require('select-dir').MY_FIND_I()<cr>",
+  { desc = "Find word in path folder" }
+)
 vim.keymap.set(
   "n",
   "<leader>fg",
@@ -83,21 +73,12 @@ vim.keymap.set(
   { desc = "show marked file list in quickfix window" }
 )
 -- vim.keymap.set("n", "<F8>", "<cmd>Tagbar<cr>", { desc = "Open/Close tagbar" ,noremap = true})
-vim.keymap.set("n", "<F2>", function()
-  local base_search_dir = vim.g.base_search_dir
-  if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
-  end
-  if base_search_dir ~= nil then
-    vim.notify(base_search_dir, "info", {
-      title = "base seach dir",
-    })
-  else
-    vim.notify("Null", "info", {
-      title = "base seach dir",
-    })
-  end
-end, { desc = "show search base directory" })
+vim.keymap.set(
+  "n",
+  "<F2>",
+  "<cmd> lua require('select-dir').list_history_dir()<cr>",
+  { desc = "show search base directory" }
+)
 vim.keymap.set("n", "<leader><F2>", function()
   require("select-dir").get_dirs()
 end, { desc = "modified search base directory" })
