@@ -7,7 +7,7 @@ local project_root = vim.fn.getcwd()
 M.save_unique_string = function(str)
   local newT = {}
   for _, v in ipairs(vim.g.dir_cache) do
-    if v ~= str then
+    if v ~= str and type(v) == "string" and type(str) == "string" then
       table.insert(newT, v)
     end
   end
@@ -97,7 +97,7 @@ M.load_dir = function()
     local json_data = f:read("*a")
     f:close()
     if json_data == "" then
-      return -- 文件为空，直接返回
+      return
     end
     local data = vim.json.decode(json_data)
 
@@ -107,7 +107,7 @@ M.load_dir = function()
 
         if current_dir == entry_dir then
           vim.g.dir_cache = entry.dir_cache
-          break -- 可以在找到匹配的目录后直接退出循环
+          break
         end
       end
     else
@@ -130,27 +130,108 @@ local opts_in = {
   show_preview = true,
 }
 
-M.fzf_get_dirs = function()
-  local fzf = require("fzf-lua")
-  if not fzf then
-    vim.notify("fzf-lua is not installed.", vim.log.levels.ERROR)
+local function run_find_command(opts)
+  -- 构造 find 命令
+  local find_command = nil
+  if opts.find_command then
+    if type(opts.find_command) == "function" then
+      find_command = opts.find_command(opts)
+    else
+      find_command = opts.find_command
+    end
+  elseif vim.fn.executable("fd") == 1 then
+    find_command = { "fd", "--type", "d", "--color", "never" }
+  elseif vim.fn.executable("fdfind") == 1 then
+    find_command = { "fdfind", "--type", "d", "--color", "never" }
+  elseif vim.fn.executable("find") == 1 and vim.fn.has("win32") == 0 then
+    find_command = { "find", ".", "-type", "d" }
+  end
+
+  if not find_command then
+    vim.notify("You need to install either `find` or `fd`/`fdfind`.", vim.log.levels.ERROR)
+    return nil
+  end
+
+  -- 添加额外选项
+  if opts.hidden and (find_command[1] == "fd" or find_command[1] == "fdfind") then
+    table.insert(find_command, "--hidden")
+  end
+  if opts.no_ignore and (find_command[1] == "fd" or find_command[1] == "fdfind") then
+    table.insert(find_command, "--no-ignore")
+  end
+  if opts.follow_symlinks and (find_command[1] == "fd" or find_command[1] == "fdfind") then
+    table.insert(find_command, "--follow")
+  end
+
+  return find_command
+end
+
+M.fzf_get_dirs = function(opts, callback)
+  opts = opts or {}
+
+  if opts.debug then
+    vim.notify("Starting directory search...", vim.log.levels.INFO)
+  end
+
+  local find_command = run_find_command(opts)
+  if not find_command then
     return
   end
 
-  local opts = {
-    prompt = "Select a Directory: ",
-    fzf_opts = { ["--ansi"] = "" },
-    actions = {
-      ["default"] = function(selected)
-        if #selected > 0 then
-          vim.g.base_search_dir = selected[1]
-          M.save_unique_string(selected[1])
-          vim.notify("Base search directory set to: " .. selected[1], vim.log.levels.INFO)
-        end
-      end,
-    },
-  }
-  fzf.files(opts)
+  -- 使用 `fzf-lua` 显示结果
+  local job_id = vim.fn.jobstart(find_command, {
+    stdout_buffered = true,
+    on_stdout = function(_, data)
+      if not data or vim.tbl_isempty(data) then
+        vim.notify("No directories found.", vim.log.levels.WARN)
+        return
+      end
+
+      -- 过滤掉 `.git` 目录
+      local results = vim.tbl_filter(function(line)
+        return not line:match("^%.git")
+      end, data)
+
+      if opts.debug then
+        print("Directories found: " .. vim.inspect(results))
+      end
+
+      require("fzf-lua").fzf_exec(results, {
+        prompt = "Select a Directory> ",
+        actions = {
+          ["default"] = function(selected)
+            if not selected or vim.tbl_isempty(selected) then
+              vim.notify("No directory selected.", vim.log.levels.WARN)
+              return
+            end
+
+            if opts.debug then
+              print("Selected directories: " .. vim.inspect(selected))
+            end
+
+            local root = vim.fn.getcwd()
+            if #selected == 1 then
+              vim.g.base_search_dir = root .. "/" .. selected[1]
+            end
+            M.save_unique_string(vim.g.base_search_dir)
+            vim.notify(root .. "/" .. selected[1], "info", {
+              title = "base seach dir",
+            })
+            if callback ~= nil then
+              callback({ cwd = vim.g.base_search_dir })
+            end
+          end,
+        },
+      })
+    end,
+    on_stderr = function(_, err_data)
+      vim.notify("Error during directory search: " .. vim.inspect(err_data), vim.log.levels.ERROR)
+    end,
+  })
+
+  if job_id <= 0 then
+    vim.notify("Failed to start find command.", vim.log.levels.ERROR)
+  end
 end
 
 M.telescope_get_dirs = function()
@@ -260,70 +341,73 @@ M.telescope_get_dirs = function()
   })
 end
 
-local function is_plugin_loaded(plugin_name)
-  return vim.fn.exists("g:loaded_" .. plugin_name) == 1 or package.loaded[plugin_name]
-end
-
-local function detect_search_tool()
-  if is_plugin_loaded("telescope") then
-    return "telescope"
-  elseif is_plugin_loaded("fzf-lua") then
-    return "fzf-lua"
-  else
-    error("No supported search tool (fzf-lua or telescope) is loaded!")
-  end
-end
-
 M.get_dirs = function()
-  local tool = detect_search_tool()
-  if tool == "fzf-lua" then
+  if LazyVim.pick.picker.name == "fzf" then
     M.fzf_get_dirs()
-  elseif tool == "telescope" then
+  elseif LazyVim.pick.picker.name == "telescope" then
     M.telescope_get_dirs()
-  end
-end
-
-local function get_text()
-  local dirHistory = {}
-
-  if vim.g.dir_cache ~= nil then
-    for _, line in pairs(vim.g.dir_cache) do
-      table.insert(dirHistory, 1, line)
-    end
-    return dirHistory
-  else
-    return nil
   end
 end
 
 M.dir_history = function(opts)
   opts = opts or {}
-  local dirlist = get_text()
-  local actions = require("telescope.actions")
-  local conf = require("telescope.config").values
-  local picker = require("telescope.pickers")
-    .new(opts, {
-      prompt_title = "folder_history",
-      finder = require("telescope.finders").new_table(dirlist),
-      sorter = conf.generic_sorter(opts),
-      attach_mappings = function(prompt_bufnr, map)
-        actions.select_default:replace(function()
-          local selection = action_state.get_selected_entry()
-          if selection == nil or selection.value == "" then
+  local dirlist = {}
+  if vim.g.dir_cache ~= nil then
+    for _, line in pairs(vim.g.dir_cache) do
+      if type(line) == "string" then
+        table.insert(dirlist, 1, line)
+      end
+    end
+  else
+    dirlist = nil
+  end
+
+  if LazyVim.pick.picker.name == "fzf" then
+    require("fzf-lua").fzf_exec(dirlist, {
+      prompt = "folder_history> ",
+      actions = {
+        ["default"] = function(selected)
+          if not selected or selected[1] == "" then
             vim.g.base_search_dir = vim.fn.getcwd()
           else
-            vim.g.base_search_dir = selection.value
+            vim.g.base_search_dir = selected[1]
           end
+
           M.save_unique_string(vim.g.base_search_dir)
+
           vim.notify(vim.g.base_search_dir, "info", {
-            title = "base seach dir",
+            title = "Base Search Dir",
           })
-          actions.close(prompt_bufnr)
-        end)
-        return true
-      end,
+        end,
+      },
     })
-    :find()
+  elseif LazyVim.pick.picker.name == "telescope" then
+    local actions = require("telescope.actions")
+    local conf = require("telescope.config").values
+    local picker = require("telescope.pickers")
+      .new(opts, {
+        prompt_title = "folder_history",
+        finder = require("telescope.finders").new_table(dirlist),
+        sorter = conf.generic_sorter(opts),
+        attach_mappings = function(prompt_bufnr, map)
+          actions.select_default:replace(function()
+            local selection = action_state.get_selected_entry()
+            if selection == nil or selection.value == "" then
+              vim.g.base_search_dir = vim.fn.getcwd()
+            else
+              vim.g.base_search_dir = selection.value
+            end
+            M.save_unique_string(vim.g.base_search_dir)
+            vim.notify(vim.g.base_search_dir, "info", {
+              title = "base seach dir",
+            })
+            actions.close(prompt_bufnr)
+          end)
+          return true
+        end,
+      })
+      :find()
+  end
 end
 
 M.move_prev = function()
@@ -371,7 +455,7 @@ end
 M.list_history_dir = function()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = M.load_dir()
   end
   if base_search_dir ~= nil then
     vim.notify(base_search_dir, "info", {
@@ -385,23 +469,21 @@ M.list_history_dir = function()
 end
 
 M.my_find_i = function()
-  local search_tool = detect_search_tool()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = M.load_dir()
   end
 
   local word_under_cursor = vim.fn.expand("<cword>")
 
-  if search_tool == "telescope" then
+  if LazyVim.pick.picker.name == "telescope" then
     require("telescope").extensions.live_grep_args.live_grep_args({
       default_text = word_under_cursor,
       search_dirs = { base_search_dir },
       postfix = "--fixed-strings",
     })
-  elseif search_tool == "fzf-lua" then
+  elseif LazyVim.pick.picker.name == "fzf" then
     require("fzf-lua").live_grep({
-      rg_opts = "--fixed-strings",
       search = word_under_cursor,
       cwd = base_search_dir,
     })
@@ -409,20 +491,18 @@ M.my_find_i = function()
 end
 
 M.MY_FIND_I = function()
-  local search_tool = detect_search_tool()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = M.load_dir()
   end
 
-  if search_tool == "telescope" then
+  if LazyVim.pick.picker.name == "telescope" then
     require("telescope").extensions.live_grep_args.live_grep_args({
       search_dirs = { base_search_dir },
       postfix = "--fixed-strings",
     })
-  elseif search_tool == "fzf-lua" then
+  elseif LazyVim.pick.picker.name == "fzf" then
     require("fzf-lua").live_grep({
-      rg_opts = "--fixed-strings",
       cwd = base_search_dir,
     })
   end

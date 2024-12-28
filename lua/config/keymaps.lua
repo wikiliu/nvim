@@ -17,24 +17,23 @@ vim.keymap.set("n", "<leader>df", "<cmd>DiffFormatFile<cr>", { desc = "Diff form
 vim.keymap.set("n", "<leader><F7>", "<cmd>ToggleTerm size= 10 direction=horizontal<cr>", { desc = "Term horizontal" })
 vim.keymap.set(
   "n",
-  "<leader>fi",
-  "<cmd> lua require('select-dir').my_find_i()<cr>",
-  { desc = "Find cursor word in path folder" }
-)
-vim.keymap.set(
-  "n",
-  "<leader>fI",
-  "<cmd> lua require('select-dir').MY_FIND_I()<cr>",
-  { desc = "Find word in path folder" }
-)
-vim.keymap.set(
-  "n",
   "<leader>fg",
   "<cmd>lua require('telescope').extensions.live_grep_args.live_grep_args()<cr>",
   { desc = "Grep args" }
 )
-vim.keymap.set("n", "<leader>fd", "<cmd>Telescope dir live_grep<CR>", { desc = "Grep in directory" })
-vim.keymap.set("n", "<leader>fD", "<cmd>FileInDirectory<CR>", { desc = "File in directory" })
+-- vim.keymap.set("n", "<leader>fd", "<cmd>Telescope dir live_grep<CR>", { desc = "Grep in directory" })
+vim.keymap.set(
+  "n",
+  "<leader>fd",
+  "<cmd>lua require('nvim-search-fzf-tele').fzf_get_dirs(nil, LazyVim.pick('live_grep'))<CR>",
+  { desc = "Grep in directory" }
+)
+vim.keymap.set(
+  "n",
+  "<leader>fD",
+  "<cmd>lua require('nvim-search-fzf-tele').fzf_get_dirs(nil, LazyVim.pick('files')<CR>",
+  { desc = "File in directory" }
+)
 vim.keymap.set("n", "<leader>fM", "<cmd>Telescope bookmarks list<CR>", { desc = "List bookmarks" })
 vim.keymap.set(
   "n",
@@ -73,30 +72,33 @@ vim.keymap.set(
   { desc = "show marked file list in quickfix window" }
 )
 -- vim.keymap.set("n", "<F8>", "<cmd>Tagbar<cr>", { desc = "Open/Close tagbar" ,noremap = true})
-vim.keymap.set(
-  "n",
-  "<F2>",
-  "<cmd> lua require('select-dir').list_history_dir()<cr>",
-  { desc = "show search base directory" }
-)
+
+vim.keymap.set("i", "jj", "<Esc>", { noremap = true })
+vim.keymap.set("n", "<leader>f<CR>", function()
+  require("fzf-lua").resume()
+end, { desc = "Resume previous search" })
+
+vim.keymap.set("n", "<F2>", function()
+  require("nvim-search-fzf-tele").list_history_dir()
+end, { desc = "show search base directory" })
 vim.keymap.set("n", "<leader><F2>", function()
-  require("select-dir").get_dirs()
+  require("nvim-search-fzf-tele").get_dirs()
 end, { desc = "modified search base directory" })
 vim.keymap.set("n", "[<F2>", function()
-  require("select-dir").move_prev()
+  require("nvim-search-fzf-tele").move_prev()
 end, { desc = "Prev of search directory" })
 vim.keymap.set("n", "]<F2>", function()
-  require("select-dir").move_next()
+  require("nvim-search-fzf-tele").move_next()
 end, { desc = "Next of search directory" })
 vim.keymap.set("n", "<leader>f<F2>", function()
-  require("select-dir").dir_history()
+  require("nvim-search-fzf-tele").dir_history()
 end, { desc = "History of search directory" })
 
 vim.keymap.set("v", "<C-f>", function()
   local base_search_dir = vim.g.base_search_dir
 
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = require("nvim-search-fzf-tele").load_dir()
   end
 
   local _, ls, cs = unpack(vim.fn.getpos("v"))
@@ -113,18 +115,25 @@ vim.keymap.set("v", "<C-f>", function()
   })
 end, { desc = "Find visual word in path folder" })
 
-vim.keymap.set("i", "jj", "<Esc>", { noremap = true })
-vim.keymap.set("n", "<leader>f<CR>", function()
-  require("telescope.builtin").resume()
-end, { desc = "Resume previous search" })
-
 vim.keymap.set({ "n", "i", "t" }, "<C-f>", function()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = require("nvim-search-fzf-tele").load_dir()
   end
   require("telescope").extensions.live_grep_args.live_grep_args({
     search_dirs = { base_search_dir },
     postfix = "--fixed-strings",
   })
 end, { desc = "Find word in path folder" })
+vim.keymap.set(
+  "n",
+  "<leader>fi",
+  "<cmd> lua require('nvim-search-fzf-tele').my_find_i()<cr>",
+  { desc = "Find cursor word in path folder" }
+)
+vim.keymap.set(
+  "n",
+  "<leader>fI",
+  "<cmd> lua require('nvim-search-fzf-tele').MY_FIND_I()<cr>",
+  { desc = "Find word in path folder" }
+)

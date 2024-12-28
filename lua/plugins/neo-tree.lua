@@ -29,7 +29,7 @@ return {
       path = path .. "/"
       vim.fn.setreg("l", path)
       vim.g.base_search_dir = path
-      require("select-dir").save_unique_string(vim.g.base_search_dir)
+      require("nvim-search-fzf-tele").save_unique_string(vim.g.base_search_dir)
       vim.notify(path, "info", {
         title = "base seach dir",
       })
