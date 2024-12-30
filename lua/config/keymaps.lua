@@ -7,7 +7,6 @@
 -- Please use this mappings table to set keyboard mapping since this is the
 -- lower level configuration and more robust one. (which-key will
 -- automatically pick-up stored data by this setting.)
-local Util = require("lazyvim.util")
 vim.keymap.set("n", "<leader>cs", "<cmd>SymbolsOutline<cr>", { desc = "Symbols Outline" })
 vim.keymap.set("n", "<F7>", '<Cmd>execute v:count . "ToggleTerm"<CR>', { desc = "Term with border" })
 vim.keymap.set("t", "<F7>", "<Cmd>ToggleTerm<CR>", { desc = "Term with border" })
@@ -15,25 +14,7 @@ vim.keymap.set("i", "<F7>", "<Esc><Cmd>ToggleTerm<CR>", { desc = "Term with bord
 vim.keymap.set("n", "<leader>or", "<cmd>OverseerRun<cr>", { desc = "Overseer Run Task" })
 vim.keymap.set("n", "<leader>df", "<cmd>DiffFormatFile<cr>", { desc = "Diff format File" })
 vim.keymap.set("n", "<leader><F7>", "<cmd>ToggleTerm size= 10 direction=horizontal<cr>", { desc = "Term horizontal" })
-vim.keymap.set(
-  "n",
-  "<leader>fg",
-  "<cmd>lua require('telescope').extensions.live_grep_args.live_grep_args()<cr>",
-  { desc = "Grep args" }
-)
--- vim.keymap.set("n", "<leader>fd", "<cmd>Telescope dir live_grep<CR>", { desc = "Grep in directory" })
-vim.keymap.set(
-  "n",
-  "<leader>fd",
-  "<cmd>lua require('nvim-search-fzf-tele').fzf_get_dirs(nil, LazyVim.pick('live_grep'))<CR>",
-  { desc = "Grep in directory" }
-)
-vim.keymap.set(
-  "n",
-  "<leader>fD",
-  "<cmd>lua require('nvim-search-fzf-tele').fzf_get_dirs(nil, LazyVim.pick('files')<CR>",
-  { desc = "File in directory" }
-)
+vim.keymap.set("n", "<leader>fg", LazyVim.pick("live_grep"), { desc = "Grep args" })
 vim.keymap.set("n", "<leader>fM", "<cmd>Telescope bookmarks list<CR>", { desc = "List bookmarks" })
 vim.keymap.set(
   "n",
@@ -74,66 +55,3 @@ vim.keymap.set(
 -- vim.keymap.set("n", "<F8>", "<cmd>Tagbar<cr>", { desc = "Open/Close tagbar" ,noremap = true})
 
 vim.keymap.set("i", "jj", "<Esc>", { noremap = true })
-vim.keymap.set("n", "<leader>f<CR>", function()
-  require("fzf-lua").resume()
-end, { desc = "Resume previous search" })
-
-vim.keymap.set("n", "<F2>", function()
-  require("nvim-search-fzf-tele").list_history_dir()
-end, { desc = "show search base directory" })
-vim.keymap.set("n", "<leader><F2>", function()
-  require("nvim-search-fzf-tele").get_dirs()
-end, { desc = "modified search base directory" })
-vim.keymap.set("n", "[<F2>", function()
-  require("nvim-search-fzf-tele").move_prev()
-end, { desc = "Prev of search directory" })
-vim.keymap.set("n", "]<F2>", function()
-  require("nvim-search-fzf-tele").move_next()
-end, { desc = "Next of search directory" })
-vim.keymap.set("n", "<leader>f<F2>", function()
-  require("nvim-search-fzf-tele").dir_history()
-end, { desc = "History of search directory" })
-
-vim.keymap.set("v", "<C-f>", function()
-  local base_search_dir = vim.g.base_search_dir
-
-  if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("nvim-search-fzf-tele").load_dir()
-  end
-
-  local _, ls, cs = unpack(vim.fn.getpos("v"))
-  local _, le, ce = unpack(vim.fn.getpos("."))
-
-  ls, le = math.min(ls, le), math.max(ls, le)
-  cs, ce = math.min(cs, ce), math.max(cs, ce)
-  local word_under_cursor = vim.api.nvim_buf_get_text(0, ls - 1, cs - 1, le - 1, ce, {})
-  word_under_cursor = word_under_cursor[1] or ""
-  require("telescope.builtin").live_grep({
-    postfix = "  --regexp ",
-    default_text = word_under_cursor,
-    search_dirs = { base_search_dir },
-  })
-end, { desc = "Find visual word in path folder" })
-
-vim.keymap.set({ "n", "i", "t" }, "<C-f>", function()
-  local base_search_dir = vim.g.base_search_dir
-  if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("nvim-search-fzf-tele").load_dir()
-  end
-  require("telescope").extensions.live_grep_args.live_grep_args({
-    search_dirs = { base_search_dir },
-    postfix = "--fixed-strings",
-  })
-end, { desc = "Find word in path folder" })
-vim.keymap.set(
-  "n",
-  "<leader>fi",
-  "<cmd> lua require('nvim-search-fzf-tele').my_find_i()<cr>",
-  { desc = "Find cursor word in path folder" }
-)
-vim.keymap.set(
-  "n",
-  "<leader>fI",
-  "<cmd> lua require('nvim-search-fzf-tele').MY_FIND_I()<cr>",
-  { desc = "Find word in path folder" }
-)

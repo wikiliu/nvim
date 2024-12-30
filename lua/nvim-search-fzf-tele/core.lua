@@ -99,7 +99,17 @@ M.load_dir = function()
     if json_data == "" then
       return
     end
-    local data = vim.json.decode(json_data)
+    local success, data = pcall(vim.json.decode, json_data)
+    if not success then
+      print("Error: Invalid JSON format. Clearing file...")
+      -- 清空文件内容
+      local file = io.open(cache_file, "w")
+      if file then
+        file:write("") -- 清空文件
+        file:close()
+      end
+      return
+    end
 
     if data ~= nil then
       for _, entry in ipairs(data) do
@@ -166,7 +176,7 @@ local function run_find_command(opts)
   return find_command
 end
 
-M.fzf_get_dirs = function(opts, callback)
+M.fzf_deal_dirs = function(opts, callback)
   opts = opts or {}
 
   if opts.debug then
@@ -214,18 +224,18 @@ M.fzf_get_dirs = function(opts, callback)
               vim.g.base_search_dir = root .. "/" .. selected[1]
             end
             M.save_unique_string(vim.g.base_search_dir)
-            vim.notify(root .. "/" .. selected[1], "info", {
+            vim.notify(vim.g.base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
               title = "base seach dir",
             })
+            if vim.g.base_search_dir == nil then
+              vim.g.base_search_dir = vim.loop.cwd()
+            end
             if callback ~= nil then
               callback({ cwd = vim.g.base_search_dir })
             end
           end,
         },
       })
-    end,
-    on_stderr = function(_, err_data)
-      vim.notify("Error during directory search: " .. vim.inspect(err_data), vim.log.levels.ERROR)
     end,
   })
 
@@ -234,7 +244,7 @@ M.fzf_get_dirs = function(opts, callback)
   end
 end
 
-M.telescope_get_dirs = function()
+M.telescope_get_dirs = function(opts, callback)
   local find_command = (function()
     if opts_in.find_command then
       if type(opts_in.find_command) == "function" then
@@ -326,7 +336,7 @@ M.telescope_get_dirs = function()
                   vim.g.base_search_dir = root .. "/" .. dirs[1]
                 end
                 M.save_unique_string(vim.g.base_search_dir)
-                vim.notify(root .. "/" .. dirs[1], "info", {
+                vim.notify(vim.g.base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
                   title = "base seach dir",
                 })
               end)
@@ -341,41 +351,53 @@ M.telescope_get_dirs = function()
   })
 end
 
-M.get_dirs = function()
+M.deal_dirs = function(opts, callback)
   if LazyVim.pick.picker.name == "fzf" then
-    M.fzf_get_dirs()
+    if callback == "files" then
+      callback = require("fzf-lua").files
+    elseif callback == "grep" then
+      callback = require("fzf-lua").live_grep
+    end
+
+    M.fzf_deal_dirs(opts, callback)
   elseif LazyVim.pick.picker.name == "telescope" then
-    M.telescope_get_dirs()
+    require("telescope-live-grep-args").live_grep()
+    -- M.telescope_get_dirs()
   end
 end
 
 M.dir_history = function(opts)
   opts = opts or {}
   local dirlist = {}
+  local relative_list
   if vim.g.dir_cache ~= nil then
     for _, line in pairs(vim.g.dir_cache) do
       if type(line) == "string" then
         table.insert(dirlist, 1, line)
       end
     end
+    relative_list = vim.tbl_map(function(path)
+      return path:sub(#vim.loop.cwd() + 2)
+    end, dirlist)
   else
     dirlist = nil
+    relative_list = nil
   end
 
   if LazyVim.pick.picker.name == "fzf" then
-    require("fzf-lua").fzf_exec(dirlist, {
+    require("fzf-lua").fzf_exec(relative_list, {
       prompt = "folder_history> ",
       actions = {
         ["default"] = function(selected)
           if not selected or selected[1] == "" then
             vim.g.base_search_dir = vim.fn.getcwd()
           else
-            vim.g.base_search_dir = selected[1]
+            vim.g.base_search_dir = vim.loop.cwd() .. "/" .. selected[1]
           end
 
           M.save_unique_string(vim.g.base_search_dir)
 
-          vim.notify(vim.g.base_search_dir, "info", {
+          vim.notify(vim.g.base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
             title = "Base Search Dir",
           })
         end,
@@ -398,7 +420,7 @@ M.dir_history = function(opts)
               vim.g.base_search_dir = selection.value
             end
             M.save_unique_string(vim.g.base_search_dir)
-            vim.notify(vim.g.base_search_dir, "info", {
+            vim.notify(vim.g.base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
               title = "base seach dir",
             })
             actions.close(prompt_bufnr)
@@ -418,13 +440,13 @@ M.move_prev = function()
   if vim.g.dir_stack_pt <= 0 then
     vim.g.dir_stack_pt = 1
     vim.g.base_search_dir = vim.g.dir_cache[1]
-    vim.notify(vim.g.base_search_dir, "info", {
+    vim.notify(vim.g.base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
       title = "base seach dir",
     })
     return vim.g.dir_cache[1]
   else
     vim.g.base_search_dir = vim.g.dir_cache[vim.g.dir_stack_pt]
-    vim.notify(vim.g.base_search_dir, "info", {
+    vim.notify(vim.g.base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
       title = "base seach dir",
     })
     return vim.g.dir_cache[vim.g.dir_stack_pt]
@@ -439,13 +461,13 @@ M.move_next = function()
   if vim.g.dir_stack_pt > #vim.g.dir_cache then
     vim.g.dir_stack_pt = #vim.g.dir_cache
     vim.g.base_search_dir = vim.g.dir_cache[#vim.g.dir_cache]
-    vim.notify(vim.g.base_search_dir, "info", {
+    vim.notify(vim.g.base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
       title = "base seach dir",
     })
     return vim.g.dir_cache[#vim.g.dir_cache]
   else
     vim.g.base_search_dir = vim.g.dir_cache[vim.g.dir_stack_pt]
-    vim.notify(vim.g.base_search_dir, "info", {
+    vim.notify(vim.g.base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
       title = "base seach dir",
     })
     return vim.g.dir_cache[vim.g.dir_stack_pt]
@@ -458,7 +480,7 @@ M.list_history_dir = function()
     base_search_dir = M.load_dir()
   end
   if base_search_dir ~= nil then
-    vim.notify(base_search_dir, "info", {
+    vim.notify(base_search_dir:sub(#vim.loop.cwd() + 2), "info", {
       title = "base seach dir",
     })
   else

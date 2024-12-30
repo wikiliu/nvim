@@ -44,7 +44,11 @@ return {
       local node = state.tree:get_node()
       local path = node:get_id()
       path = node.type == "directory" and path or vim.fn.fnamemodify(path, ":h")
-      require("telescope.builtin").live_grep({ search_dirs = { path } })
+      if LazyVim.pick.picker.name == "fzf" then
+        require("fzf-lua").live_grep({ cwd = path })
+      else
+        require("telescope.builtin").live_grep({ search_dirs = { path } })
+      end
     end
     opts.commands.spectre = function(state)
       local p = do_setcd(state)
@@ -97,14 +101,19 @@ return {
     opts.commands.find_in_dir = function(state)
       local node = state.tree:get_node()
       local path = node.type == "file" and node:get_parent_id() or node:get_id()
-      require("telescope.builtin").find_files({ cwd = path })
+      if LazyVim.pick.picker.name == "fzf" then
+        require("fzf-lua").files({ cwd = path })
+      else
+        require("telescope.builtin").find_files({ cwd = path })
+      end
     end
     opts.window.mappings.F = "find_in_dir"
 
     local toggleterm_in_direction = function(state, direction)
       local node = state.tree:get_node()
       local path = node.type == "file" and node:get_parent_id() or node:get_id()
-      require("toggleterm.terminal").Terminal:new({ dir = path, direction = direction }):toggle()
+      -- require("toggleterm.terminal").Terminal:new({ dir = path, direction = direction }):toggle()
+      Snacks.terminal(nil, { cwd = path })
     end
     local prefix = "T"
     ---@diagnostic disable-next-line: assign-type-mismatch
