@@ -37,5 +37,6 @@ return {
         n = { q = actions.close },
       },
     }
+    vim.keymap.set("n", "<leader>f<enter>", "<cmd>Telescope resume<cr>", { desc = "Resume" })
   end,
 }

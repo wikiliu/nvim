@@ -13,7 +13,7 @@ return {
       transparent_background = false,
       filter = "spectrum", -- classic | octagon | pro | machine | ristretto | spectrum
       day_night = {
-        enable = true,
+        enable = false,
         day_filter = "pro",
         night_filter = "spectrum",
       },
@@ -22,7 +22,7 @@ return {
         "float_win",
         "toggleterm",
         "telescope",
-        "which-key",
+        -- "which-key",
         "renamer",
         "notify",
         -- "nvim-tree",
@@ -62,7 +62,7 @@ return {
       overridePalette = function(filter)
         return {
           -- dark2 = "#101014",
-          -- dark1 = "#16161E",
+          -- dark1 = "#212121",
           background = "#1c1c1c",
           --   text = "#C0CAF5",
           --   accent1 = "#f7768e",

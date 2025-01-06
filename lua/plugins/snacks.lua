@@ -21,7 +21,7 @@ return {
             desc = "Close terminal and focus last window",
           },
         },
-        border = "double",
+        border = "rounded",
       },
     },
   },
