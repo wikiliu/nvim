@@ -4,7 +4,7 @@ return {
     opts.keymap = {
       preset = "default",
       ["<S-k>"] = { "show", "show_documentation", "hide_documentation" },
-      ["<enter>"] = { "select_and_accept" },
+      ["<enter>"] = { "select_and_accept"， "fallback"  },
       ["<Tab>"] = { "select_next", "fallback" },
       ["<S-Tab>"] = { "select_prev", "fallback" },
       ["<C-u>"] = { "scroll_documentation_up", "fallback" },
