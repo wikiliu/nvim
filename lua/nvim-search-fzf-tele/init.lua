@@ -39,10 +39,18 @@ M.setup = function()
 
     local word_under_cursor = under_cursor[1] or ""
 
-    require("fzf-lua").live_grep({
-      search = word_under_cursor,
-      cwd = base_search_dir,
-    })
+    if LazyVim.pick.picker.name == "telescope" then
+      require("telescope").extensions.live_grep_args.live_grep_args({
+        default_text = word_under_cursor,
+        search_dirs = { base_search_dir },
+        postfix = "--fixed-strings",
+      })
+    elseif LazyVim.pick.picker.name == "fzf" then
+      require("fzf-lua").live_grep({
+        search = word_under_cursor,
+        cwd = base_search_dir,
+      })
+    end
   end, { desc = "Find visual word in path folder" })
 
   vim.keymap.set({ "n", "i", "t" }, "<C-f>", function()
@@ -56,9 +64,17 @@ M.setup = function()
         .. (base_search_dir:sub(#vim.loop.cwd() + 2) ~= "" and base_search_dir:sub(#vim.loop.cwd() + 2) or "."),
       vim.log.levels.INFO
     )
-    require("fzf-lua").live_grep({
-      cwd = base_search_dir,
-    })
+
+    if LazyVim.pick.picker.name == "telescope" then
+      require("telescope").extensions.live_grep_args.live_grep_args({
+        search_dirs = { base_search_dir },
+        postfix = "--fixed-strings",
+      })
+    elseif LazyVim.pick.picker.name == "fzf" then
+      require("fzf-lua").live_grep({
+        cwd = base_search_dir,
+      })
+    end
   end, { desc = "Find word in path folder" })
 
   vim.keymap.set({ "n", "i", "t" }, "<C-A-f>", function()
@@ -72,9 +88,15 @@ M.setup = function()
         .. (base_search_dir:sub(#vim.loop.cwd() + 2) ~= "" and base_search_dir:sub(#vim.loop.cwd() + 2) or "."),
       vim.log.levels.INFO
     )
-    require("fzf-lua").files({
-      cwd = base_search_dir,
-    })
+    if LazyVim.pick.picker.name == "telescope" then
+      require("telescope.builtin").find_files({
+        cwd = base_search_dir,
+      })
+    elseif LazyVim.pick.picker.name == "fzf" then
+      require("fzf-lua").files({
+        cwd = base_search_dir,
+      })
+    end
   end, { desc = "Find word in path folder" })
 
   vim.keymap.set(

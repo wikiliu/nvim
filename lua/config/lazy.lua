@@ -54,3 +54,5 @@ require("lazy").setup({
     },
   },
 })
+
+require("nvim-search-fzf-tele").setup()

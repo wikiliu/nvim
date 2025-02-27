@@ -1,10 +1,20 @@
 return {
   "ibhagwan/fzf-lua",
   opts = function(_, opts)
+    local fzf = require("fzf-lua")
     opts.fzf_opts = {
       ["--history"] = vim.fn.stdpath("data") .. "/fzf-lua-history",
       ["--cycle"] = true,
     }
+    local config = fzf.config
+    config.defaults.keymap.fzf["ctrl-f"] = "half-page-up"
+    config.defaults.keymap.fzf["ctrl-b"] = "half-page-down"
+
+    config.defaults.keymap.fzf["ctrl-u"] = "preview-page-down"
+    config.defaults.keymap.fzf["ctrl-d"] = "preview-page-up"
+    config.defaults.keymap.builtin["<c-d>"] = "preview-page-down"
+    config.defaults.keymap.builtin["<c-u>"] = "preview-page-up"
+
     vim.keymap.set("n", "<leader>f<CR>", function()
       require("fzf-lua").resume()
     end, { desc = "Resume previous search" })
