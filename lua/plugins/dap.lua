@@ -1,6 +1,5 @@
 return {
   "mfussenegger/nvim-dap",
-  event = "VeryLazy",
   config = function()
     local dap = require("dap")
     -- load mason-nvim-dap here, after all adapters have been setup

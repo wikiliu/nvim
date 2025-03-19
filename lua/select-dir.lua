@@ -261,23 +261,20 @@ M.telescope_get_dirs = function()
   })
 end
 
-local function is_plugin_loaded(plugin_name)
-  return vim.fn.exists("g:loaded_" .. plugin_name) == 1 or package.loaded[plugin_name]
-end
-
 local function detect_search_tool()
-  if is_plugin_loaded("telescope") then
+  if vim.fn.executable("fzf") == 1 then
+    return "fzf"
+  elseif vim.fn.executable("telescope") == 1 then
     return "telescope"
-  elseif is_plugin_loaded("fzf-lua") then
-    return "fzf-lua"
   else
-    error("No supported search tool (fzf-lua or telescope) is loaded!")
+    vim.notify("No supported find tool detected (fzf or telescope).", vim.log.levels.ERROR)
+    return nil
   end
 end
 
 M.get_dirs = function()
   local tool = detect_search_tool()
-  if tool == "fzf-lua" then
+  if tool == "fzf" then
     M.fzf_get_dirs()
   elseif tool == "telescope" then
     M.telescope_get_dirs()
@@ -364,66 +361,6 @@ M.move_next = function()
       title = "base seach dir",
     })
     return vim.g.dir_cache[vim.g.dir_stack_pt]
-  end
-end
-
-M.list_history_dir = function()
-  local base_search_dir = vim.g.base_search_dir
-  if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
-  end
-  if base_search_dir ~= nil then
-    vim.notify(base_search_dir, "info", {
-      title = "base seach dir",
-    })
-  else
-    vim.notify("Null", "info", {
-      title = "base seach dir",
-    })
-  end
-end
-
-M.my_find_i = function()
-  local search_tool = detect_search_tool()
-  local base_search_dir = vim.g.base_search_dir
-  if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
-  end
-
-  local word_under_cursor = vim.fn.expand("<cword>")
-
-  if search_tool == "telescope" then
-    require("telescope").extensions.live_grep_args.live_grep_args({
-      default_text = word_under_cursor,
-      search_dirs = { base_search_dir },
-      postfix = "--fixed-strings",
-    })
-  elseif search_tool == "fzf-lua" then
-    require("fzf-lua").live_grep({
-      rg_opts = "--fixed-strings",
-      search = word_under_cursor,
-      cwd = base_search_dir,
-    })
-  end
-end
-
-M.MY_FIND_I = function()
-  local search_tool = detect_search_tool()
-  local base_search_dir = vim.g.base_search_dir
-  if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
-  end
-
-  if search_tool == "telescope" then
-    require("telescope").extensions.live_grep_args.live_grep_args({
-      search_dirs = { base_search_dir },
-      postfix = "--fixed-strings",
-    })
-  elseif search_tool == "fzf-lua" then
-    require("fzf-lua").live_grep({
-      rg_opts = "--fixed-strings",
-      cwd = base_search_dir,
-    })
   end
 end
 
