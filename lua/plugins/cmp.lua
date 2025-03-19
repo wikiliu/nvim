@@ -1,7 +1,6 @@
 return {
   {
     "hrsh7th/nvim-cmp",
-    lazy = true,
     optional = true,
     dependencies = {
       "rcarriga/cmp-dap",

@@ -1,8 +1,8 @@
 return {
   "ten3roberts/bookmarks.nvim",
   branch = "feat-scoped-bookmarks",
-  lazy = true,
   -- after = "telescope.nvim",
+  event = "VimEnter",
   config = function()
     require("bookmarks").setup({
       sign_priority = 8, --set bookmark sign priority to cover other sign

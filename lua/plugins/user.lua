@@ -14,7 +14,7 @@ return {
   --	lazy = VeryLazy,
   --},
   { "kkharji/sqlite.lua" },
-  { "nvim-lua/plenary.nvim" },
+  { "nvim-lua/plenary.nvim", branch = master },
   {
     "princejoogie/dir-telescope.nvim",
     -- telescope.nvim is a required dependency
@@ -27,6 +27,6 @@ return {
         show_preview = true,
       })
     end,
-    lazy = true,
+    lazy = false,
   },
 }
