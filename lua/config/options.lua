@@ -3,8 +3,9 @@
 -- Add any additional options here
 
 local dap = require("dap")
--- vim.g.lazyvim_picker = "telescope"
--- vim.g.lazyvim_cmp = "nvim-cmp"
+vim.g.lazyvim_picker = "telescope"
+vim.g.lazyvim_cmp = "nvim-cmp"
+vim.g.lazyvim_check_order = false
 
 dap.configurations.cpp = {
   {
