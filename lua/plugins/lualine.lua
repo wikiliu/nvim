@@ -1,4 +1,36 @@
 return {
+  "nvim-lualine/lualine.nvim",
+  event = "VeryLazy",
+  opts = function(_, opts)
+    -- 支持中英文的星期对应 emoji
+    local emojis = {
+      ["Monday"] = "😪",
+      ["星期一"] = "😪",
+      ["Tuesday"] = "😐",
+      ["星期二"] = "😐",
+      ["Wednesday"] = "🤔",
+      ["星期三"] = "🤔",
+      ["Thursday"] = "😊",
+      ["星期四"] = "😊",
+      ["Friday"] = "🥳",
+      ["星期五"] = "🥳",
+      ["Saturday"] = "🎉",
+      ["星期六"] = "🎉",
+      ["Sunday"] = "😌",
+      ["星期日"] = "😌",
+    }
+
+    local function get_weekday_emoji()
+      local weekday = os.date("%A") -- 获取当前星期
+      return emojis[weekday] or "😄" -- 兜底默认表情
+    end
+
+    table.insert(opts.sections.lualine_x, {
+      function()
+        return get_weekday_emoji()
+      end,
+    })
+  end,
   -- "nvim-lualine/lualine.nvim",
   -- optional = true,
   -- opts = function(_, opts)
