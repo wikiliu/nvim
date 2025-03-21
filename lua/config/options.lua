@@ -39,5 +39,5 @@ vim.o.clipboard = "unnamedplus"
 require("lazyvim.util").lsp.on_attach(function()
   vim.opt.signcolumn = "yes"
 end)
-vim.cmd([[autocmd VimEnter * lua require('select-dir').load_dir()]])
-vim.cmd([[autocmd VimLeave * lua require('select-dir').save_dir()]])
+vim.cmd([[autocmd VimEnter * lua require('utils.select-dir').load_dir()]])
+vim.cmd([[autocmd VimLeave * lua require('utils.select-dir').save_dir()]])

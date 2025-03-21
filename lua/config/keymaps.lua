@@ -17,7 +17,7 @@ vim.keymap.set("n", "<leader><F7>", "<cmd>ToggleTerm size= 10 direction=horizont
 vim.keymap.set("n", "<leader>fi", function()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = require("utils.select-dir").load_dir()
   end
   local word_under_cursor = vim.fn.expand("<cword>")
   require("telescope").extensions.live_grep_args.live_grep_args({
@@ -29,7 +29,7 @@ end, { desc = "Find cursor word in path folder" })
 vim.keymap.set("n", "<leader>fI", function()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = require("utils.select-dir").load_dir()
   end
   require("telescope").extensions.live_grep_args.live_grep_args({
     search_dirs = { base_search_dir },
@@ -85,7 +85,7 @@ vim.keymap.set(
 vim.keymap.set("n", "<F2>", function()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = require("utils.select-dir").load_dir()
   end
   if base_search_dir ~= nil then
     vim.notify(base_search_dir, "info", {
@@ -98,23 +98,23 @@ vim.keymap.set("n", "<F2>", function()
   end
 end, { desc = "show search base directory" })
 vim.keymap.set("n", "<leader><F2>", function()
-  require("select-dir").get_dirs()
+  require("utils.select-dir").get_dirs()
 end, { desc = "modified search base directory" })
 vim.keymap.set("n", "[<F2>", function()
-  require("select-dir").move_prev()
+  require("utils.select-dir").move_prev()
 end, { desc = "Prev of search directory" })
 vim.keymap.set("n", "]<F2>", function()
-  require("select-dir").move_next()
+  require("utils.select-dir").move_next()
 end, { desc = "Next of search directory" })
 vim.keymap.set("n", "<leader>f<F2>", function()
-  require("select-dir").dir_history()
+  require("utils.select-dir").dir_history()
 end, { desc = "History of search directory" })
 
 vim.keymap.set("v", "<C-f>", function()
   local base_search_dir = vim.g.base_search_dir
 
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = require("utils.select-dir").load_dir()
   end
 
   local _, ls, cs = unpack(vim.fn.getpos("v"))
@@ -139,7 +139,7 @@ end, { desc = "Resume previous search" })
 vim.keymap.set({ "n", "i", "t" }, "<C-f>", function()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
-    base_search_dir = require("select-dir").load_dir()
+    base_search_dir = require("utils.select-dir").load_dir()
   end
   require("telescope").extensions.live_grep_args.live_grep_args({
     search_dirs = { base_search_dir },

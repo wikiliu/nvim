@@ -1,3 +1,4 @@
+local M = {}
 local action_set = require("telescope.actions.set")
 local action_state = require("telescope.actions.state")
 local actions = require("telescope.actions")
@@ -7,7 +8,6 @@ local make_entry = require("telescope.make_entry")
 local pickers = require("telescope.pickers")
 local uv = vim.loop
 local flatten = vim.tbl_flatten
-local M = {}
 -- 之后可以加上cache到vim内存中
 local project_root = vim.fn.getcwd()
 
