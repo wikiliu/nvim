@@ -19,6 +19,9 @@ return {
       ["Sunday"] = "😌",
       ["星期日"] = "😌",
     }
+    local status = require("nvim-spotify").status
+    status:start()
+    table.insert(opts.sections.lualine_x, status.listen)
 
     local function get_weekday_emoji()
       local weekday = os.date("%A") -- 获取当前星期

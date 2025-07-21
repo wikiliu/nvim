@@ -273,7 +273,7 @@ local function detect_search_tool()
 end
 
 M.get_dirs = function()
-  local tool = detect_search_tool()
+  local tool = vim.g.lazyvim_picker
   if tool == "fzf" then
     M.fzf_get_dirs()
   elseif tool == "telescope" then

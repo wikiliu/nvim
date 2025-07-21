@@ -14,6 +14,11 @@ vim.keymap.set("i", "<F7>", "<Esc><Cmd>ToggleTerm<CR>", { desc = "Term with bord
 vim.keymap.set("n", "<leader>or", "<cmd>OverseerRun<cr>", { desc = "Overseer Run Task" })
 vim.keymap.set("n", "<leader>df", "<cmd>DiffFormatFile<cr>", { desc = "Diff format File" })
 vim.keymap.set("n", "<leader><F7>", "<cmd>ToggleTerm size= 10 direction=horizontal<cr>", { desc = "Term horizontal" })
+
+vim.keymap.set("n", "<leader>cp", function()
+  vim.fn.setreg("+", vim.fn.expand("%:p"))
+end, { desc = "Copy full path to clipboard" })
+
 vim.keymap.set("n", "<leader>fi", function()
   local base_search_dir = vim.g.base_search_dir
   if base_search_dir == nil or base_search_dir == "" then
@@ -146,3 +151,5 @@ vim.keymap.set({ "n", "i", "t" }, "<C-f>", function()
     postfix = "--fixed-strings",
   })
 end, { desc = "Find word in path folder" })
+vim.api.nvim_set_keymap("n", "<leader>ch", ":Copilot panel hide<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>co", ":Copilot panel<CR>", { noremap = true, silent = true })
