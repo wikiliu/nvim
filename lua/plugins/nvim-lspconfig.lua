@@ -10,6 +10,19 @@ return {
       },
       setup = {
         clangd = function(_, opts)
+          opts.root_markers = {
+            ".git",
+            "compile_commands.json",
+            "compile_flags.txt",
+            "configure.ac", -- AutoTools
+            "Makefile",
+            "configure.ac",
+            "configure.in",
+            "config.h.in",
+            "meson.build",
+            "meson_options.txt",
+            "build.ninja",
+          }
           opts.capabilities.offsetEncoding = { "utf-16" }
           if not opts.cmd then
             opts.cmd = { "clangd" }
