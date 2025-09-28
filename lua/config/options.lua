@@ -6,6 +6,20 @@ local dap = require("dap")
 vim.g.lazyvim_picker = "telescope"
 vim.g.lazyvim_cmp = "nvim-cmp"
 
+vim.g.clipboard = {
+  name = "lemonade",
+  copy = {
+    ["+"] = { "lemonade", "copy" },
+    ["*"] = { "lemonade", "copy" },
+  },
+  paste = {
+    ["+"] = { "lemonade", "paste" },
+    ["*"] = { "lemonade", "paste" },
+  },
+  cache_enabled = 0,
+}
+
+
 dap.configurations.cpp = {
   {
     name = "Launch file",

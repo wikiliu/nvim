@@ -33,7 +33,7 @@ return {
         "which-key",
         "renamer",
         "notify",
-        -- "nvim-tree",
+        "nvim-tree",
         "neo-tree",
         "bufferline", -- better used if background of `neo-tree` or `nvim-tree` is cleared
       }, -- "float_win", "toggleterm", "telescope", "which-key", "renamer", "neo-tree", "nvim-tree", "bufferline"
@@ -54,7 +54,7 @@ return {
           -- ColorColumn = { bg =  "#272727" },
           -- Mine
           CmpCompletion = { blend = vim.o.pumblend },
-          Normal = { bg = "#1c1c1c" },
+          Normal = { bg = "#000000" },
           DashboardRecent = { fg = c.base.magenta },
           DashboardProject = { fg = c.base.blue },
           DashboardConfiguration = { fg = c.base.white },
@@ -68,7 +68,7 @@ return {
         return {
           -- dark2 = "#101014",
           -- dark1 = "#16161E",
-          background = "#1c1c1c",
+          background = "#000000",
           -- text = "#C0CAF5",
           -- accent1 = "#f7768e",
           -- accent2 = "#7aa2f7",
@@ -84,6 +84,6 @@ return {
         }
       end,
     })
-    monokai.load()
+    -- monokai.load()
   end,
 }
