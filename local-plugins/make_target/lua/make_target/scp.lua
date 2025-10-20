@@ -74,11 +74,33 @@ local function load_history(root)
   end
   local s = f:read("*a")
   f:close()
+
   local ok, obj = pcall(vim.json.decode, s)
   if ok and type(obj) == "table" then
     obj.artifacts = obj.artifacts or {}
+
+    local valid_artifacts = {}
+    for _, item in ipairs(obj.artifacts) do
+      if item.path and (vim.loop.fs_stat(item.path) or vim.loop.fs_stat(root .. "/" .. item.path)) then
+        table.insert(valid_artifacts, item)
+      end
+    end
+
+    if #valid_artifacts ~= #obj.artifacts then
+      obj.artifacts = valid_artifacts
+
+      local wf = io.open(p, "w")
+      if wf then
+        wf:write(vim.json.encode(obj))
+        wf:close()
+      end
+    else
+      obj.artifacts = valid_artifacts
+    end
+
     return obj
   end
+
   return { artifacts = {} }
 end
 
@@ -95,6 +117,7 @@ local function save_history(root, H)
   f:write(s)
   f:close()
 end
+
 local function touch_artifact(root, relfile)
   local H = load_history(root)
   H.artifacts = H.artifacts or {}

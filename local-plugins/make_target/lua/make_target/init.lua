@@ -55,17 +55,45 @@ local function load_history(root)
   local p = hist_path(root)
   local f = io.open(p, "r")
   if not f then
-    hist_cache[root] = { build = {}, targets = {} }
+    hist_cache[root] = { build = {}, targets = {}, artifacts = {} }
     return hist_cache[root]
   end
+
   local s = f:read("*a")
   f:close()
+
   local ok, obj = pcall(vim.json.decode, s)
   if ok and type(obj) == "table" then
-    hist_cache[root] = vim.tbl_deep_extend("force", { build = {}, targets = {} }, obj)
+    obj.build = obj.build or {}
+    obj.targets = obj.targets or {}
+    obj.artifacts = obj.artifacts or {}
+
+    local valid_artifacts = {}
+    local removed_count = 0
+
+    for _, item in ipairs(obj.artifacts) do
+      if item.path and (vim.loop.fs_stat(item.path) or vim.loop.fs_stat(root .. "/" .. item.path)) then
+        table.insert(valid_artifacts, item)
+      else
+        removed_count = removed_count + 1
+      end
+    end
+
+    if removed_count > 0 then
+      obj.artifacts = valid_artifacts
+      local wf = io.open(p, "w")
+      if wf then
+        wf:write(vim.json.encode(obj))
+        wf:close()
+      end
+      print(string.format("[load_history] Removed %d missing artifacts from %s", removed_count, p))
+    end
+
+    hist_cache[root] = vim.tbl_deep_extend("force", { build = {}, targets = {}, artifacts = {} }, obj)
   else
-    hist_cache[root] = { build = {}, targets = {} }
+    hist_cache[root] = { build = {}, targets = {}, artifacts = {} }
   end
+
   return hist_cache[root]
 end
 
