@@ -477,9 +477,28 @@ local function prompt_scp_after_build()
   if scp_cfg.enable == false then
     return
   end
-  local default_ip = scp_cfg.default_ip or scp_cfg.ip
-  local default_user = scp_cfg.user or "rickliu"
-  local remote_dir = scp_cfg.remote_dir or "/tmp"
+  -- Prefer project-local scp history when available. If the project's
+  -- history JSON contains a non-empty `scp` array, use its last entry to
+  -- build the prompt title. Otherwise fall back to `cfg.scp` (opts).
+  local default_ip, default_user, remote_dir
+  local root = find_project_root(vim.loop.cwd() or vim.fn.expand("%:p:h"))
+  if root then
+    local histfile = hist_path(root)
+    local stat = vim.loop.fs_stat(histfile)
+    if stat then
+      local H = load_history(root)
+      if H and H.scp and #H.scp > 0 and H.scp[#H.scp] then
+        local last = H.scp[#H.scp]
+        default_ip = last.ip or last.remote_ip or scp_cfg.default_ip or scp_cfg.ip
+        default_user = last.user or scp_cfg.user or "rickliu"
+        remote_dir = last.remote_dir or scp_cfg.remote_dir or "/tmp"
+      end
+    end
+  end
+  -- fallback to opts if history did not provide values
+  default_ip = default_ip or scp_cfg.default_ip or scp_cfg.ip
+  default_user = default_user or scp_cfg.user or "rickliu"
+  remote_dir = remote_dir or scp_cfg.remote_dir or "/tmp"
   local target_label = (default_ip and (default_user .. "@" .. default_ip .. ":" .. remote_dir)) or "<no IP address>"
   local ans = vim.fn.input(string.format("SCP to %s? [y/N/o]: ", target_label))
   if ans == "y" or ans == "Y" then

@@ -2,6 +2,7 @@ local M = {}
 
 local Path = require("plenary.path")
 local scan = require("plenary.scandir")
+local ui_select_sync
 
 local cfg = {
   enable = true,
@@ -269,10 +270,10 @@ local function pick_telescope(root, items, on_select)
   local action_state = require("telescope.actions.state")
   pickers
     .new({}, {
-      prompt_title = string.format("SCP %s@%s:%s — pick file", cfg.user, cfg.ip, cfg.remote_dir),
+      prompt_title = string.format("SCP %s@%s:%s — pick file (<C-t> for actions)", cfg.user, cfg.ip, cfg.remote_dir),
       finder = finders.new_table(items),
       sorter = conf.generic_sorter({}),
-      attach_mappings = function(prompt_bufnr, _)
+      attach_mappings = function(prompt_bufnr, map)
         actions.select_default:replace(function()
           local entry = action_state.get_selected_entry()
           local line = action_state.get_current_line()
@@ -282,6 +283,67 @@ local function pick_telescope(root, items, on_select)
             on_select(rel)
           end
         end)
+
+        -- 添加到 telescope actions 菜单
+        local edit_ssh = function()
+          actions.close(prompt_bufnr)
+          vim.schedule(function()
+            M.edit_project_scp()
+            pick_telescope(root, items, on_select)
+          end)
+        end
+
+        local edit_cfg = function()
+          actions.close(prompt_bufnr)
+          vim.schedule(function()
+            if M.edit_project_cfg then
+              M.edit_project_cfg()
+            else
+              M.edit_project_scp()
+            end
+            pick_telescope(root, items, on_select)
+          end)
+        end
+
+        -- 在 picker 内用 <C-t> 弹出一个输入框让用户输入数字或 q 取消（更直观，不会把按键当成 prompt 的输入）
+        local function choose_action()
+          local prompt = "Action: [1] Edit SSH  [2] Edit Config  [q] Cancel > "
+          -- Use command-line input (vim.fn.input) here because floating ui input
+          -- can be unfriendly inside Telescope in some terminals. vim.fn.input
+          -- always reads from the command-line and is reliable.
+          local ans = vim.fn.input(prompt) or ""
+          ans = tostring(ans):gsub("^%s+", ""):gsub("%s+$", "")
+          if ans == "" then
+            return
+          end
+          local c = ans:sub(1, 1):lower()
+          if c == "q" then
+            return
+          end
+          if c == "1" or c == "e" then
+            edit_ssh()
+            return
+          end
+          if c == "2" or c == "c" then
+            edit_cfg()
+            return
+          end
+          -- fallback: if user typed the word
+          if ans:match("edit%s*ssh") then
+            edit_ssh()
+          elseif ans:match("edit%s*config") or ans:match("edit%s*cfg") then
+            edit_cfg()
+          end
+        end
+
+        -- use the provided `map` helper (like in pick_build_dir) so mappings work inside Telescope
+        map("i", "<C-t>", function()
+          choose_action()
+        end)
+        map("n", "<C-t>", function()
+          choose_action()
+        end)
+
         return true
       end,
     })
@@ -319,6 +381,131 @@ local function perform_scp(root, rel)
   vim.notify(string.format("[make_target][scp] transferred: %s -> %s@%s:%s", rel, cfg.user, cfg.ip, cfg.remote_dir))
 end
 -- ----- Public API -----
+local function prompt_scp_input(default)
+  default = default or {}
+  local config = {}
+
+  -- 必填项
+  config.user = vim.fn.input("SCP user: ", default.user or cfg.user or "")
+  config.ip = vim.fn.input("SCP ip: ", default.ip or cfg.ip or "")
+  config.remote_dir = vim.fn.input("remote_dir: ", default.remote_dir or cfg.remote_dir or "")
+  
+  -- 可选项，空密码表示使用SSH密钥
+  local pwd = vim.fn.input("password (empty=SSH key): ", default.password or "")
+  config.password = pwd ~= "" and pwd or nil
+
+  -- 保持其他配置项不变
+  config.prefer = default.prefer or cfg.prefer or "auto"
+  config.depth_files = default.depth_files or cfg.depth_files or 6
+  config.keep_artifacts = default.keep_artifacts or cfg.keep_artifacts or 5
+  config.lemonade = default.lemonade ~= nil and default.lemonade or cfg.lemonade
+
+  return config
+end
+
+-- global sync wrapper for vim.ui.input
+function ui_input_sync(prompt, def)
+  if vim.ui and vim.ui.input then
+    local co = coroutine.running()
+    if not co then
+      return vim.fn.input(prompt, def or "")
+    end
+    local res
+    vim.ui.input({ prompt = prompt, default = def or "" }, function(input)
+      res = input
+      if co then
+        coroutine.resume(co)
+      end
+    end)
+    coroutine.yield()
+    return res
+  else
+    return vim.fn.input(prompt, def or "")
+  end
+end
+
+-- sync wrapper for vim.ui.select (fallback to inputlist)
+ui_select_sync = function(items, opts)
+  opts = opts or {}
+  if vim.ui and vim.ui.select then
+    local co = coroutine.running()
+    if not co then
+      -- fall back to numbered inputlist when not running inside a coroutine
+      local arr = { opts.prompt or "Select:" }
+      for _, v in ipairs(items) do
+        table.insert(arr, v)
+      end
+      local sel = vim.fn.inputlist(arr)
+      if sel <= 0 then
+        return nil
+      end
+      return items[sel - 1]
+    end
+    local res
+    vim.ui.select(items, { prompt = opts.prompt or "Select:" }, function(choice)
+      res = choice
+      if co then
+        coroutine.resume(co)
+      end
+    end)
+    coroutine.yield()
+    return res
+  else
+    -- fall back to numbered inputlist
+    local arr = { opts.prompt or "Select:" }
+    for _, v in ipairs(items) do
+      table.insert(arr, v)
+    end
+    local sel = vim.fn.inputlist(arr)
+    if sel <= 0 then
+      return nil
+    end
+    return items[sel - 1]
+  end
+end
+
+function M.edit_project_scp()
+  local root = find_project_root(vim.fn.expand("%:p:h"))
+  if not root then
+    return vim.notify("[make_target][scp] project root not found", vim.log.levels.ERROR)
+  end
+  local H = load_history(root)
+  H.scp = H.scp or {}
+
+  local current = H.scp[1] or {}
+  local edited = prompt_scp_input(current)
+  if not edited.user or edited.user == "" or not edited.ip or edited.ip == "" then
+    return vim.notify("[make_target][scp] User and IP are required", vim.log.levels.WARN)
+  end
+  
+  H.scp = { vim.tbl_extend("force", { ts = os.time() }, edited) }
+  cfg = vim.tbl_deep_extend("force", cfg, edited)
+  save_history(root, H)
+  vim.notify(string.format("[make_target][scp] Updated: %s@%s:%s", edited.user, edited.ip, edited.remote_dir), vim.log.levels.INFO)
+end
+
+function M.edit_project_cfg()
+  local root = find_project_root(vim.fn.expand("%:p:h"))
+  if not root then
+    return vim.notify("[make_target][scp] project root not found", vim.log.levels.ERROR)
+  end
+  local H = load_history(root)
+  H.scp = H.scp or {}
+  local current = H.scp[1] or {}
+  local edited = prompt_scp_input(current)
+  if not edited.user or edited.user == "" or not edited.ip or edited.ip == "" then
+    return vim.notify("[make_target][scp] User and IP are required", vim.log.levels.WARN)
+  end
+  
+  local en = vim.fn.input("enable (y/n): ", (cfg.enable and "y") or "y") or "y"
+  edited.enable = en:lower():sub(1,1) == "y"
+  H.scp = { vim.tbl_extend("force", { ts = os.time() }, edited) }
+  save_history(root, H)
+  cfg = vim.tbl_deep_extend("force", cfg, edited)
+  vim.notify(string.format("[make_target][scp] Updated cfg: %s@%s:%s (enable=%s)",
+    edited.user, edited.ip, edited.remote_dir, edited.enable and "yes" or "no"), vim.log.levels.INFO)
+end
+
 function M.pick()
   if not cfg.enable then
     return vim.notify("[make_target][scp] disabled in config", vim.log.levels.WARN)
@@ -327,12 +514,61 @@ function M.pick()
   if not root then
     return vim.notify("[make_target][scp] project root not found", vim.log.levels.ERROR)
   end
+  -- project-first: prefer last saved scp entry in project history
+  -- Behavior changed per user request:
+  -- * If the history file does NOT exist -> prompt to create one (same as before).
+  -- * If the history file exists but does NOT contain `scp` field -> do NOT override `cfg` (keep opts defaults).
+  -- * If the history file contains an `scp` array:
+  --     - if empty array -> prompt to create one
+  --     - if non-empty -> use last entry to override cfg
+  local histfile = hist_path(root)
+  local file_exists = vim.loop.fs_stat(histfile) ~= nil
+  local H = load_history(root)
+  if not file_exists then
+    -- history file missing: prompt to create one (keep previous behavior)
+    vim.notify("[make_target][scp] no ssh information found for this project; please create one", vim.log.levels.INFO)
+    local new = prompt_scp_input()
+    H.scp = { vim.tbl_extend("force", { ts = os.time() }, new) }
+    save_history(root, H)
+    cfg = vim.tbl_deep_extend("force", cfg, new)
+  else
+    -- history file exists
+    if H.scp == nil then
+      -- file exists but contains no `scp` entry: keep cfg from opts and do not prompt
+      H.scp = H.scp or {}
+    elseif #H.scp == 0 then
+      -- scp present but empty array: prompt to create one
+      vim.notify("[make_target][scp] no ssh information found; please create one", vim.log.levels.INFO)
+      local new = prompt_scp_input()
+      H.scp = { vim.tbl_extend("force", { ts = os.time() }, new) }
+      save_history(root, H)
+      cfg = vim.tbl_deep_extend("force", cfg, new)
+    else
+      -- scp present and non-empty: use the last saved entry
+      local last = H.scp[#H.scp]
+      if last then
+        cfg = vim.tbl_deep_extend("force", cfg, last)
+      end
+    end
+  end
+
+  -- temporary buffer-local Alt-r to edit project SCP quickly
+  pcall(function()
+    vim.keymap.set("n", "<C-t>", function()
+      M.edit_project_scp()
+    end, { buffer = 0, noremap = true, silent = true })
+  end)
+
   local items = list_artifacts(root)
   if #items == 0 then
     return vim.notify("[make_target][scp] no .deb or .so found under build* dirs", vim.log.levels.WARN)
   end
   local function on_select(rel)
     perform_scp(root, rel)
+    -- cleanup mapping if present
+    pcall(function()
+      vim.keymap.del("n", "<C-t>", { buffer = 0 })
+    end)
   end
   if cfg.prefer == "fzf" or (cfg.prefer == "auto" and pcall(require, "fzf-lua")) then
     if pick_fzf(items, on_select) then
@@ -342,9 +578,27 @@ function M.pick()
   pick_telescope(root, items, on_select)
 end
 function M.setup(opts)
-  cfg = vim.tbl_deep_extend("force", cfg, opts or {})
+  -- ignore scp fields coming from nvim config; prefer project-local history
+  local filtered = vim.tbl_deep_extend("force", {}, opts or {})
+  filtered.user = nil
+  filtered.ip = nil
+  filtered.remote_dir = nil
+  filtered.password = nil
+  filtered.prefer = nil
+  filtered.depth_files = nil
+  filtered.keep_artifacts = nil
+  filtered.lemonade = nil
+  cfg = vim.tbl_deep_extend("force", cfg, filtered)
   vim.api.nvim_create_user_command("MakeTargetScp", function()
     M.pick()
+  end, {})
+
+  vim.api.nvim_create_user_command("MakeTargetEditScp", function()
+    M.edit_project_scp()
+  end, {})
+
+  vim.api.nvim_create_user_command("MakeTargetEditCfg", function()
+    M.edit_project_cfg()
   end, {})
 end
 return M

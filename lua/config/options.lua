@@ -2,34 +2,34 @@
 -- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
 -- Add any additional options here
 
-local dap = require("dap")
 vim.g.lazyvim_picker = "telescope"
 vim.g.lazyvim_cmp = "nvim-cmp"
 
-dap.configurations.cpp = {
-  {
-    name = "Launch file",
-    type = "cppdbg",
-    request = "launch",
-    program = function()
-      return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-    end,
-    cwd = "${workspaceFolder}",
-    stopAtEntry = true,
-  },
-  {
-    MIMode = "gdb",
-    miDebuggerServerAddress = "10.30.16.114:1234", -- 修改为你的gdbserver地址和端口
-    miDebuggerPath = "/usr/bin/gdb", -- 修改为你的gdb路径
-    setupCommands = {
-      {
-        description = "Enable pretty-printing for gdb",
-        text = "-enable-pretty-printing",
-        ignoreFailures = false,
-      },
-    },
-  },
-}
+-- local dap = require("dap")
+-- dap.configurations.cpp = {
+--   {
+--     name = "Launch file",
+--     type = "cppdbg",
+--     request = "launch",
+--     program = function()
+--       return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+--     end,
+--     cwd = "${workspaceFolder}",
+--     stopAtEntry = true,
+--   },
+--   {
+--     MIMode = "gdb",
+--     miDebuggerServerAddress = "10.30.16.114:1234", -- 修改为你的gdbserver地址和端口
+--     miDebuggerPath = "/usr/bin/gdb", -- 修改为你的gdb路径
+--     setupCommands = {
+--       {
+--         description = "Enable pretty-printing for gdb",
+--         text = "-enable-pretty-printing",
+--         ignoreFailures = false,
+--       },
+--     },
+--   },
+-- }
 
 vim.opt.shiftwidth = 4
 vim.o.pumblend = 0
