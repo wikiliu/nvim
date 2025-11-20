@@ -500,8 +500,9 @@ local function prompt_scp_after_build()
   default_user = default_user or scp_cfg.user or "rickliu"
   remote_dir = remote_dir or scp_cfg.remote_dir or "/tmp"
   local target_label = (default_ip and (default_user .. "@" .. default_ip .. ":" .. remote_dir)) or "<no IP address>"
-  local ans = vim.fn.input(string.format("SCP to %s? [y/N/o]: ", target_label))
+  local ans = vim.fn.input(string.format("SCP and deploy to %s? [y/N/o]: ", target_label))
   if ans == "y" or ans == "Y" then
+    vim.g.deploy = true
     if not default_ip or default_ip == "" then
       return vim.notify("[make_target] Default SCP IP not set", vim.log.levels.WARN)
     end
