@@ -84,6 +84,6 @@ return {
         }
       end,
     })
-    monokai.load()
+    -- monokai.load()
   end,
 }
