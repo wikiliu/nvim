@@ -181,7 +181,7 @@ local function list_artifacts(root)
       depth = cfg.depth_files or 6,
       silent = true,
       on_insert = function(f)
-        if f:match("%.deb$") or f:match("%.so$") then
+        if f:match("%.deb$") or f:match("%.so") then
           local rp = realpath(f)
           if not seen[rp] then
             seen[rp] = true
@@ -227,6 +227,15 @@ local function ssh_cmd(cmd)
     return string.format("ssh -o BatchMode=yes -o StrictHostKeyChecking=no %s@%s %q", cfg.user, cfg.ip, cmd)
   end
 end
+
+local function ssh_root_cmd(cmd)
+  if cfg.password and cfg.password ~= "" then
+    return string.format("sshpass -p %q ssh -o StrictHostKeyChecking=no %s@%s %q", cfg.password, "root", cfg.ip, cmd)
+  else
+    return string.format("ssh -o BatchMode=yes -o StrictHostKeyChecking=no %s@%s %q", "root", cfg.ip, cmd)
+  end
+end
+
 local function scp_cmd(local_file)
   if cfg.password and cfg.password ~= "" then
     return string.format(
@@ -367,6 +376,94 @@ local function pick_fzf(items, on_select)
   })
   return true
 end
+
+local function perform_scp_async(root, rel)
+  ensure_remote_dir()
+  local full = Path:new(root, rel).filename
+  local cmd = scp_cmd(full)
+
+  -- 1️⃣ 计算浮窗文本与位置（右上角）
+  local text = "[make_target][scp] transferring: " .. rel .. " ..."
+  local width = math.min(80, #text) -- 浮窗宽度（你可以调大一点）
+  local height = 1
+
+  local screen_width = vim.o.columns
+
+  local col = screen_width - width - 2 -- 🟢 放在右上角
+  local row = 1 -- 上边缘
+
+  -- 2️⃣ 创建浮窗
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { text })
+
+  local win = vim.api.nvim_open_win(buf, false, {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = "minimal",
+    border = "single",
+  })
+
+  -- 3️⃣ 异步执行 SCP
+  vim.fn.jobstart(cmd, {
+    on_exit = function(_, exit_code, _)
+      vim.schedule(function()
+        -- 关闭浮窗
+        if vim.api.nvim_win_is_valid(win) then
+          vim.api.nvim_win_close(win, true)
+        end
+
+        -- SCP 失败
+        if exit_code ~= 0 then
+          vim.notify(string.format("[make_target][scp] failed: %s", rel), vim.log.levels.ERROR)
+          return
+        end
+
+        -- 部署动作
+        local function finish_deploy()
+          lemonade_copy(vim.fn.fnamemodify(full, ":t"))
+          touch_artifact(root, rel)
+          vim.notify(
+            string.format("[make_target][scp] transferred: %s -> %s@%s:%s", rel, cfg.user, cfg.ip, cfg.remote_dir)
+          )
+        end
+
+        if vim.g.deploy == true then
+          local filename = full:match("([^/]+)$")
+          local root_cmd
+
+          if filename:find("dri") then
+            root_cmd = ssh_root_cmd(string.format("mv %s/%s /usr/lib/x86_64-linux-gnu/dri/", cfg.remote_dir, filename))
+          elseif filename:find("drm") then
+            root_cmd = ssh_root_cmd(string.format("mv %s/%s /usr/lib/x86_64-linux-gnu/", cfg.remote_dir, filename))
+          elseif filename:find("drv") then
+            root_cmd = ssh_root_cmd(string.format("mv %s/%s /usr/lib/xorg/modules/drivers/", cfg.remote_dir, filename))
+          end
+
+          if root_cmd then
+            vim.fn.jobstart(root_cmd, {
+              on_exit = function(_, root_exit, _)
+                vim.schedule(function()
+                  if root_exit ~= 0 then
+                    vim.notify(string.format("[make_target][scp] deploy failed: %s", rel), vim.log.levels.ERROR)
+                    return
+                  end
+                  vim.g.deploy = false
+                  finish_deploy()
+                end)
+              end,
+            })
+          end
+        else
+          finish_deploy()
+        end
+      end)
+    end,
+  })
+end
+
 local function perform_scp(root, rel)
   ensure_remote_dir()
   local full = Path:new(root, rel).filename
@@ -376,10 +473,33 @@ local function perform_scp(root, rel)
     vim.notify(string.format("[make_target][scp] failed: %s\n%s", rel, out), vim.log.levels.ERROR)
     return
   end
+  local deploy = ""
+  if vim.g.deploy and vim.g.deploy == true then
+    local filename = full:match("([^/]+)$")
+    if filename:find("dri") then
+      local root_cmd = ssh_root_cmd(string.format("mv %s/%s /usr/lib/x86_64-linux-gnu/dri/", cfg.remote_dir, filename))
+      out = vim.fn.system(root_cmd)
+    elseif filename:find("drm") then
+      local root_cmd = ssh_root_cmd(string.format("mv %s/%s /usr/lib/x86_64-linux-gnu/", cfg.remote_dir, filename))
+      out = vim.fn.system(root_cmd)
+    elseif filename:find("drv") then
+      local root_cmd = ssh_root_cmd(string.format("mv %s/%s /usr/lib/xorg/modules/drivers/", cfg.remote_dir, filename))
+      out = vim.fn.system(root_cmd)
+    end
+    vim.g.deploy = false
+    if vim.v.shell_error ~= 0 then
+      vim.notify(string.format("[make_target][scp] failed: %s\n%s", rel, out), vim.log.levels.ERROR)
+      return
+    end
+    deploy = "deploy"
+  end
   lemonade_copy(vim.fn.fnamemodify(full, ":t"))
   touch_artifact(root, rel)
-  vim.notify(string.format("[make_target][scp] transferred: %s -> %s@%s:%s", rel, cfg.user, cfg.ip, cfg.remote_dir))
+  vim.notify(
+    string.format("[make_target][scp] transferred %s: %s -> %s@%s:%s", deploy, rel, cfg.user, cfg.ip, cfg.remote_dir)
+  )
 end
+
 -- ----- Public API -----
 local function prompt_scp_input(default)
   default = default or {}
@@ -389,16 +509,18 @@ local function prompt_scp_input(default)
   config.user = vim.fn.input("SCP user: ", default.user or cfg.user or "")
   config.ip = vim.fn.input("SCP ip: ", default.ip or cfg.ip or "")
   config.remote_dir = vim.fn.input("remote_dir: ", default.remote_dir or cfg.remote_dir or "")
-  
+
   -- 可选项，空密码表示使用SSH密钥
   local pwd = vim.fn.input("password (empty=SSH key): ", default.password or "")
   config.password = pwd ~= "" and pwd or nil
+
+  local en = vim.fn.input("use lemonade (y/n): ", (cfg.enable and "y") or "y") or "y"
+  config.lemonade = en:lower():sub(1, 1) == "y"
 
   -- 保持其他配置项不变
   config.prefer = default.prefer or cfg.prefer or "auto"
   config.depth_files = default.depth_files or cfg.depth_files or 6
   config.keep_artifacts = default.keep_artifacts or cfg.keep_artifacts or 5
-  config.lemonade = default.lemonade ~= nil and default.lemonade or cfg.lemonade
 
   return config
 end
@@ -477,11 +599,14 @@ function M.edit_project_scp()
   if not edited.user or edited.user == "" or not edited.ip or edited.ip == "" then
     return vim.notify("[make_target][scp] User and IP are required", vim.log.levels.WARN)
   end
-  
+
   H.scp = { vim.tbl_extend("force", { ts = os.time() }, edited) }
   cfg = vim.tbl_deep_extend("force", cfg, edited)
   save_history(root, H)
-  vim.notify(string.format("[make_target][scp] Updated: %s@%s:%s", edited.user, edited.ip, edited.remote_dir), vim.log.levels.INFO)
+  vim.notify(
+    string.format("[make_target][scp] Updated: %s@%s:%s", edited.user, edited.ip, edited.remote_dir),
+    vim.log.levels.INFO
+  )
 end
 
 function M.edit_project_cfg()
@@ -496,14 +621,22 @@ function M.edit_project_cfg()
   if not edited.user or edited.user == "" or not edited.ip or edited.ip == "" then
     return vim.notify("[make_target][scp] User and IP are required", vim.log.levels.WARN)
   end
-  
+
   local en = vim.fn.input("enable (y/n): ", (cfg.enable and "y") or "y") or "y"
-  edited.enable = en:lower():sub(1,1) == "y"
+  edited.enable = en:lower():sub(1, 1) == "y"
   H.scp = { vim.tbl_extend("force", { ts = os.time() }, edited) }
   save_history(root, H)
   cfg = vim.tbl_deep_extend("force", cfg, edited)
-  vim.notify(string.format("[make_target][scp] Updated cfg: %s@%s:%s (enable=%s)",
-    edited.user, edited.ip, edited.remote_dir, edited.enable and "yes" or "no"), vim.log.levels.INFO)
+  vim.notify(
+    string.format(
+      "[make_target][scp] Updated cfg: %s@%s:%s (enable=%s)",
+      edited.user,
+      edited.ip,
+      edited.remote_dir,
+      edited.enable and "yes" or "no"
+    ),
+    vim.log.levels.INFO
+  )
 end
 
 function M.pick()
@@ -564,7 +697,7 @@ function M.pick()
     return vim.notify("[make_target][scp] no .deb or .so found under build* dirs", vim.log.levels.WARN)
   end
   local function on_select(rel)
-    perform_scp(root, rel)
+    perform_scp_async(root, rel)
     -- cleanup mapping if present
     pcall(function()
       vim.keymap.del("n", "<C-t>", { buffer = 0 })
