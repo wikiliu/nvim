@@ -58,8 +58,11 @@ return {
     end
 
     opts.window.mappings.L = "copy_locate_path"
+    opts.window.mappings.P = "toggle_preview"
     opts.window.mappings.G = "grep_in_path"
     opts.window.mappings["<leader>r"] = "spectre"
+    opts.window.mappings["<tab>"] = "preview"
+    opts.window.mappings["<cr>"] = "open"
 
     opts.window.mappings.uu = {
       function(state)
