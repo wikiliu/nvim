@@ -1,5 +1,6 @@
 return {
   "stevearc/overseer.nvim",
+  commit = "b6ab6960a36b5ab8ae70eb0bc9f1a883d6d99a3f",
   dependencies = {
     "akinsho/toggleterm.nvim",
   },
